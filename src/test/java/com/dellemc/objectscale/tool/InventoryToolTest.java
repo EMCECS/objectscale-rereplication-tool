@@ -72,7 +72,11 @@ public class InventoryToolTest extends AbstractTest {
             Assertions.assertNotNull(row.getIsDeleteMarker());
             Assertions.assertNotNull(row.getIsLatest());
             Assertions.assertNotNull(row.getLastModified());
-            Assertions.assertEquals("d41d8cd98f00b204e9800998ecf8427e", row.getETag());
+            if (!row.getIsDeleteMarker()) {
+                Assertions.assertEquals("d41d8cd98f00b204e9800998ecf8427e", row.getETag());
+            } else {
+                Assertions.assertEquals("", row.getETag());
+            }
             Assertions.assertEquals(0, row.getSize());
             Assertions.assertNotNull(row.getOwnerId());
             Assertions.assertNotNull(row.getReplicationStatus());
