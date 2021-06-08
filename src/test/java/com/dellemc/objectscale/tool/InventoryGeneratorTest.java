@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
  * Setting up CRR and injecting replication failures is hard, so this class simply inventories a versioned bucket
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class InventoryToolTest extends AbstractTest {
+public class InventoryGeneratorTest extends AbstractTest {
     public static final int OBJECT_COUNT = 2100;
     String bucket = "inventory-tool-basic-test";
 
@@ -38,7 +38,7 @@ public class InventoryToolTest extends AbstractTest {
     public void testStripQuotes() {
         List<String> etags = Arrays.asList("abcdef0123456789", "\"abcdef0123456789\"", " \"abcdef0123456789\" ");
         String strippedEtag = "abcdef0123456789";
-        etags.forEach(etag -> Assertions.assertEquals(strippedEtag, InventoryTool.stripQuotes(etag),
+        etags.forEach(etag -> Assertions.assertEquals(strippedEtag, InventoryGenerator.stripQuotes(etag),
                 "etag [" + etag + "] was not stripped properly"));
     }
 
@@ -46,12 +46,12 @@ public class InventoryToolTest extends AbstractTest {
     public void testBasicInventory() throws IOException {
         Path inventoryFile = Files.createTempFile("rereplication-inventory", "csv");
         inventoryFile.toFile().deleteOnExit();
-        InventoryTool tool = new InventoryTool(InventoryTool.Config.builder()
+        InventoryGenerator tool = new InventoryGenerator(InventoryGenerator.Config.builder()
                 .endpoint(URI.create(s3Endpoint))
                 .awsProfile(awsProfile)
                 .bucket(bucket)
                 .inventoryFile(inventoryFile)
-                .filterType(InventoryTool.FilterType.AllVersions)
+                .filterType(InventoryGenerator.FilterType.AllVersions)
                 .build());
 
         tool.run();
@@ -64,7 +64,7 @@ public class InventoryToolTest extends AbstractTest {
         Assertions.assertEquals(OBJECT_COUNT + OBJECT_COUNT / 2, records.size());
 
         // map CSV records to InventoryRows
-        List<InventoryRow> rows = records.stream().map(ReReplicationTool::inventoryRowFromCsvRecord).collect(Collectors.toList());
+        List<InventoryRow> rows = records.stream().map(ReReplicationProcessor::inventoryRowFromCsvRecord).collect(Collectors.toList());
 
         rows.forEach(row -> {
             Assertions.assertTrue(row.getKey().matches("object-[0-9]*"));

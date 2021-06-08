@@ -23,14 +23,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public class ReReplicationTool extends AbstractVersionScanningTool {
-    private static final Logger log = LogManager.getLogger(ReReplicationTool.class);
+public class ReReplicationProcessor extends AbstractReplicationTool {
+    private static final Logger log = LogManager.getLogger(ReReplicationProcessor.class);
 
     public static final int QUEUE_SIZE = 500;
 
     private final Config config;
 
-    public ReReplicationTool(Config config) {
+    public ReReplicationProcessor(Config config) {
         super(config, null);
         this.config = config;
     }
@@ -50,7 +50,7 @@ public class ReReplicationTool extends AbstractVersionScanningTool {
             Stream<InventoryRow> inventoryStream = StreamSupport.stream(records.spliterator(), false)
                     // filter out the header if present (determined by checking if the first column value is "Key")
                     .filter(record -> record.getRecordNumber() > 1 || !record.get(InventoryRow.Header.Key).equals(InventoryRow.Header.Key.name()))
-                    .map(ReReplicationTool::inventoryRowFromCsvRecord);
+                    .map(ReReplicationProcessor::inventoryRowFromCsvRecord);
 
             // configure thread pool for S3 updates
             final EnhancedThreadPoolExecutor executor = new EnhancedThreadPoolExecutor(
@@ -79,7 +79,7 @@ public class ReReplicationTool extends AbstractVersionScanningTool {
                 throw new RuntimeException("last " + QUEUE_SIZE + " HEAD requests taking more than an hour; bailing out");
             }
 
-            log.info("{} complete; exiting normally", ReReplicationTool.class.getSimpleName());
+            log.info("{} complete; exiting normally", ReReplicationProcessor.class.getSimpleName());
 
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
@@ -146,7 +146,7 @@ public class ReReplicationTool extends AbstractVersionScanningTool {
     @Getter
     @EqualsAndHashCode(callSuper = true)
     @ToString
-    public static class Config extends AbstractVersionScanningTool.Config {
+    public static class Config extends AbstractReplicationTool.Config {
         private final boolean reReplicateCustomAcls;
     }
 }

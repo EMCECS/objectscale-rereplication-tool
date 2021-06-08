@@ -4,7 +4,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class ReReplicationToolCliTest {
+public class ReReplicationCliTest {
     @Test
     public void testInventoryToolCli() throws Exception {
         String endpoint = "endpoint-1", bucket = "bucket-1", accessKey = "accessKey-1";
@@ -25,8 +25,8 @@ public class ReReplicationToolCliTest {
                 "--force-overwrite",
         };
 
-        InventoryTool.Config config = (InventoryTool.Config) ReReplicationToolCli.parseConfig(
-                new DefaultParser().parse(ReReplicationToolCli.options(), args));
+        InventoryGenerator.Config config = (InventoryGenerator.Config) ReReplicationCli.parseConfig(
+                new DefaultParser().parse(ReReplicationCli.options(), args));
 
         Assertions.assertEquals(endpoint, config.getEndpoint().toString());
         Assertions.assertEquals(bucket, config.getBucket());
@@ -35,7 +35,7 @@ public class ReReplicationToolCliTest {
         Assertions.assertEquals(profile, config.getAwsProfile());
         Assertions.assertEquals(file, config.getInventoryFile().toString());
         Assertions.assertEquals(threads, config.getThreadCount());
-        Assertions.assertEquals(InventoryTool.FilterType.FailedCurrentVersionOnly, config.getFilterType());
+        Assertions.assertEquals(InventoryGenerator.FilterType.FailedCurrentVersionOnly, config.getFilterType());
         Assertions.assertEquals(prefix, config.getPrefix());
         Assertions.assertTrue(config.isForceOverwrite());
     }
@@ -55,8 +55,8 @@ public class ReReplicationToolCliTest {
                 "--current-version"
         };
 
-        InventoryTool.Config config = (InventoryTool.Config) ReReplicationToolCli.parseConfig(
-                new DefaultParser().parse(ReReplicationToolCli.options(), args));
+        InventoryGenerator.Config config = (InventoryGenerator.Config) ReReplicationCli.parseConfig(
+                new DefaultParser().parse(ReReplicationCli.options(), args));
 
         Assertions.assertEquals(endpoint, config.getEndpoint().toString());
         Assertions.assertEquals(bucket, config.getBucket());
@@ -64,8 +64,8 @@ public class ReReplicationToolCliTest {
         Assertions.assertEquals(secretKey, config.getSecretKey());
         Assertions.assertNull(config.getAwsProfile());
         Assertions.assertEquals(file, config.getInventoryFile().toString());
-        Assertions.assertEquals(AbstractVersionScanningTool.Config.DEFAULT_THREAD_COUNT, config.getThreadCount());
-        Assertions.assertEquals(InventoryTool.FilterType.CurrentVersionOnly, config.getFilterType());
+        Assertions.assertEquals(AbstractReplicationTool.Config.DEFAULT_THREAD_COUNT, config.getThreadCount());
+        Assertions.assertEquals(InventoryGenerator.FilterType.CurrentVersionOnly, config.getFilterType());
         Assertions.assertNull(config.getPrefix());
         Assertions.assertFalse(config.isForceOverwrite());
     }
@@ -85,10 +85,10 @@ public class ReReplicationToolCliTest {
                 "--all-versions"
         };
 
-        InventoryTool.Config config = (InventoryTool.Config) ReReplicationToolCli.parseConfig(
-                new DefaultParser().parse(ReReplicationToolCli.options(), args));
+        InventoryGenerator.Config config = (InventoryGenerator.Config) ReReplicationCli.parseConfig(
+                new DefaultParser().parse(ReReplicationCli.options(), args));
 
-        Assertions.assertEquals(InventoryTool.FilterType.AllVersions, config.getFilterType());
+        Assertions.assertEquals(InventoryGenerator.FilterType.AllVersions, config.getFilterType());
     }
 
     @Test
@@ -109,8 +109,8 @@ public class ReReplicationToolCliTest {
                 "--re-replicate-custom-acls"
         };
 
-        ReReplicationTool.Config config = (ReReplicationTool.Config) ReReplicationToolCli.parseConfig(
-                new DefaultParser().parse(ReReplicationToolCli.options(), args));
+        ReReplicationProcessor.Config config = (ReReplicationProcessor.Config) ReReplicationCli.parseConfig(
+                new DefaultParser().parse(ReReplicationCli.options(), args));
 
         Assertions.assertEquals(endpoint, config.getEndpoint().toString());
         Assertions.assertEquals(bucket, config.getBucket());
@@ -136,8 +136,8 @@ public class ReReplicationToolCliTest {
                 "-r"
         };
 
-        ReReplicationTool.Config config = (ReReplicationTool.Config) ReReplicationToolCli.parseConfig(
-                new DefaultParser().parse(ReReplicationToolCli.options(), args));
+        ReReplicationProcessor.Config config = (ReReplicationProcessor.Config) ReReplicationCli.parseConfig(
+                new DefaultParser().parse(ReReplicationCli.options(), args));
 
         Assertions.assertEquals(endpoint, config.getEndpoint().toString());
         Assertions.assertEquals(bucket, config.getBucket());
@@ -145,7 +145,7 @@ public class ReReplicationToolCliTest {
         Assertions.assertEquals(secretKey, config.getSecretKey());
         Assertions.assertNull(config.getAwsProfile());
         Assertions.assertEquals(file, config.getInventoryFile().toString());
-        Assertions.assertEquals(AbstractVersionScanningTool.Config.DEFAULT_THREAD_COUNT, config.getThreadCount());
+        Assertions.assertEquals(AbstractReplicationTool.Config.DEFAULT_THREAD_COUNT, config.getThreadCount());
         Assertions.assertFalse(config.isReReplicateCustomAcls());
     }
 }

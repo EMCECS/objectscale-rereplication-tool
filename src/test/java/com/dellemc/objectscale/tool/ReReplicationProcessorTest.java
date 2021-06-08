@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class ReReplicationToolTest extends AbstractTest {
+public class ReReplicationProcessorTest extends AbstractTest {
     public static final int OBJECT_COUNT = 1200;
 
     String bucket = "rereplication-tool-test";
@@ -49,8 +49,8 @@ public class ReReplicationToolTest extends AbstractTest {
         return s3Client.listObjectVersionsPaginator(builder -> builder.bucket(getBucket())).stream()
                 .flatMap(response ->
                         Stream.concat( // merge versions and delete-markers
-                                response.versions().stream().map(InventoryTool::inventoryRowFromObjectVersion),
-                                response.deleteMarkers().stream().map(InventoryTool::inventoryRowFromDeleteMarker)
+                                response.versions().stream().map(InventoryGenerator::inventoryRowFromObjectVersion),
+                                response.deleteMarkers().stream().map(InventoryGenerator::inventoryRowFromDeleteMarker)
                         ).sorted()) // sort merged versions properly
                 .filter(row -> {
                     Matcher matcher = objectNumPattern.matcher(row.getKey());
@@ -77,7 +77,7 @@ public class ReReplicationToolTest extends AbstractTest {
         Files.write(inventoryFile, keys, StandardCharsets.UTF_8);
 
         // tool should touch only the keys in the list
-        ReReplicationTool tool = new ReReplicationTool(ReReplicationTool.Config.builder()
+        ReReplicationProcessor tool = new ReReplicationProcessor(ReReplicationProcessor.Config.builder()
                 .endpoint(URI.create(s3Endpoint))
                 .awsProfile(awsProfile)
                 .bucket(bucket)
@@ -104,7 +104,7 @@ public class ReReplicationToolTest extends AbstractTest {
         Files.write(inventoryFile, rowStrings, StandardCharsets.UTF_8);
 
         // tool should touch only the keys in the list
-        ReReplicationTool tool = new ReReplicationTool(ReReplicationTool.Config.builder()
+        ReReplicationProcessor tool = new ReReplicationProcessor(ReReplicationProcessor.Config.builder()
                 .endpoint(URI.create(s3Endpoint))
                 .awsProfile(awsProfile)
                 .bucket(bucket)
@@ -139,7 +139,7 @@ public class ReReplicationToolTest extends AbstractTest {
         }
 
         // tool should touch only the keys in the list
-        ReReplicationTool tool = new ReReplicationTool(ReReplicationTool.Config.builder()
+        ReReplicationProcessor tool = new ReReplicationProcessor(ReReplicationProcessor.Config.builder()
                 .endpoint(URI.create(s3Endpoint))
                 .awsProfile(awsProfile)
                 .bucket(bucket)

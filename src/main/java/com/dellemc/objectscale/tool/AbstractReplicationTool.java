@@ -12,13 +12,13 @@ import software.amazon.awssdk.services.s3.S3Client;
 import java.net.URI;
 import java.nio.file.Path;
 
-public abstract class AbstractVersionScanningTool implements Runnable, AutoCloseable {
+public abstract class AbstractReplicationTool implements Runnable, AutoCloseable {
     protected final Config config;
     protected final S3Client s3Client;
     private final boolean createdClient;
     private boolean closed = false;
 
-    public AbstractVersionScanningTool(Config config, S3Client s3Client) {
+    public AbstractReplicationTool(Config config, S3Client s3Client) {
         this.config = config;
         if (s3Client != null) {
             this.s3Client = s3Client;

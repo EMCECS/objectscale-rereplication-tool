@@ -24,15 +24,15 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
-public class InventoryTool extends AbstractVersionScanningTool {
-    private static final Logger log = LogManager.getLogger(InventoryTool.class);
+public class InventoryGenerator extends AbstractReplicationTool {
+    private static final Logger log = LogManager.getLogger(InventoryGenerator.class);
 
     public static final String HEADER_AMZ_REPLICATION_STATUS = "x-amz-replication-status";
     public static final int QUEUE_SIZE = 2000;
 
     private final Config config;
 
-    public InventoryTool(Config config) {
+    public InventoryGenerator(Config config) {
         super(config, null);
         this.config = config;
     }
@@ -99,8 +99,8 @@ public class InventoryTool extends AbstractVersionScanningTool {
             // use a stream to convert to InventoryRow and filter
             versionPages.stream().flatMap(response ->
                     Stream.concat( // merge versions and delete-markers
-                            response.versions().stream().map(InventoryTool::inventoryRowFromObjectVersion),
-                            response.deleteMarkers().stream().map(InventoryTool::inventoryRowFromDeleteMarker)
+                            response.versions().stream().map(InventoryGenerator::inventoryRowFromObjectVersion),
+                            response.deleteMarkers().stream().map(InventoryGenerator::inventoryRowFromDeleteMarker)
                     ).sorted()) // sort combined versions+deleteMarkers (this is how they are returned, but s3client separates)
                     // if not listing all versions, filter current version only
                     .filter(inventoryRow -> config.filterType == FilterType.AllVersions || inventoryRow.getIsLatest())
@@ -155,7 +155,7 @@ public class InventoryTool extends AbstractVersionScanningTool {
             // don't close the CSV file before the writer is done
             writerThread.join();
 
-            log.info("{} complete; exiting normally", InventoryTool.class.getSimpleName());
+            log.info("{} complete; exiting normally", InventoryGenerator.class.getSimpleName());
 
         } catch (IOException | InterruptedException e) {
             stillListing.set(false);
@@ -195,7 +195,7 @@ public class InventoryTool extends AbstractVersionScanningTool {
     @Getter
     @EqualsAndHashCode(callSuper = true)
     @ToString
-    public static class Config extends AbstractVersionScanningTool.Config {
+    public static class Config extends AbstractReplicationTool.Config {
         private final String prefix;
         @Builder.Default
         private final FilterType filterType = FilterType.FailedCurrentVersionOnly;

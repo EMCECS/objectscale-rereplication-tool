@@ -9,9 +9,9 @@ import org.apache.logging.log4j.core.config.Configurator;
 import java.net.URI;
 import java.nio.file.Paths;
 
-public class ReReplicationToolCli {
-    private static final Logger log = LogManager.getLogger(ReReplicationToolCli.class);
-    public static final String RELEASE_VERSION = ReReplicationToolCli.class.getPackage().getImplementationVersion();
+public class ReReplicationCli {
+    private static final Logger log = LogManager.getLogger(ReReplicationCli.class);
+    public static final String RELEASE_VERSION = ReReplicationCli.class.getPackage().getImplementationVersion();
 
     static Options options() {
         Options options = new Options();
@@ -75,14 +75,14 @@ public class ReReplicationToolCli {
         return options;
     }
 
-    static AbstractVersionScanningTool.Config parseConfig(CommandLine commandLine) {
-        AbstractVersionScanningTool.Config config;
+    static AbstractReplicationTool.Config parseConfig(CommandLine commandLine) {
+        AbstractReplicationTool.Config config;
         if (commandLine.hasOption("re-replicate")) {
-            config = ReReplicationTool.Config.builder()
+            config = ReReplicationProcessor.Config.builder()
                     .reReplicateCustomAcls(commandLine.hasOption("re-replicate-custom-acls"))
                     .build();
         } else {
-            config = InventoryTool.Config.builder()
+            config = InventoryGenerator.Config.builder()
                     .filterType(filterTypeFromCli(commandLine))
                     .forceOverwrite(commandLine.hasOption("force-overwrite"))
                     .prefix(commandLine.getOptionValue("prefix"))
@@ -107,13 +107,13 @@ public class ReReplicationToolCli {
         return config;
     }
 
-    static InventoryTool.FilterType filterTypeFromCli(CommandLine commandLine) {
+    static InventoryGenerator.FilterType filterTypeFromCli(CommandLine commandLine) {
         if (commandLine.hasOption("current-version")) {
-            return InventoryTool.FilterType.CurrentVersionOnly;
+            return InventoryGenerator.FilterType.CurrentVersionOnly;
         } else if (commandLine.hasOption("all-versions")) {
-            return InventoryTool.FilterType.AllVersions;
+            return InventoryGenerator.FilterType.AllVersions;
         } else {
-            return InventoryTool.FilterType.FailedCurrentVersionOnly;
+            return InventoryGenerator.FilterType.FailedCurrentVersionOnly;
         }
     }
 
@@ -121,7 +121,7 @@ public class ReReplicationToolCli {
         // check for help option
         CommandLine commandLine = new DefaultParser().parse(new Options().addOption(Option.builder("h").build()), args);
         if (commandLine.hasOption('h')) {
-            System.out.println("\n" + ReReplicationTool.class.getSimpleName() + " - a tool to inventory replication status or re-trigger replication for object versions in a bucket with an associated CRR policy.");
+            System.out.println("\n" + ReReplicationProcessor.class.getSimpleName() + " - a tool to inventory replication status or re-trigger replication for object versions in a bucket with an associated CRR policy.");
             System.out.println("Version: " + RELEASE_VERSION + "\n");
             HelpFormatter hf = new HelpFormatter();
             hf.printHelp("java -jar rereplication-tool-1.0.jar -e <endpoint> -b <bucket> (-i|-r) -f <inventory-file> [options]",
@@ -137,15 +137,15 @@ public class ReReplicationToolCli {
                 Configurator.setLevel(LogManager.getRootLogger().getName(), Level.INFO);
             }
 
-            AbstractVersionScanningTool.Config config = parseConfig(commandLine);
+            AbstractReplicationTool.Config config = parseConfig(commandLine);
             log.info("parsed options:\n{}", config);
             config.validate();
 
-            AbstractVersionScanningTool tool;
+            AbstractReplicationTool tool;
             if (commandLine.hasOption("inventory")) {
-                tool = new InventoryTool((InventoryTool.Config) config);
+                tool = new InventoryGenerator((InventoryGenerator.Config) config);
             } else {
-                tool = new ReReplicationTool((ReReplicationTool.Config) config);
+                tool = new ReReplicationProcessor((ReReplicationProcessor.Config) config);
             }
             tool.run();
             // TODO: make this asynchronous and have a status thread
