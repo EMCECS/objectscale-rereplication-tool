@@ -87,7 +87,7 @@ public class ReReplicationToolTest extends AbstractTest {
 
         // verify only the keys we want are touched
         Assertions.assertEquals(26, keys.size());
-        verifyOnlyTheseKeysWereTouched(keys, testStartTime, false);
+        verifyOnlyTheseKeysWereTouched(keys, testStartTime);
     }
 
     @Test
@@ -115,7 +115,7 @@ public class ReReplicationToolTest extends AbstractTest {
         // verify only the keys we want are touched
         List<String> keys = rows.stream().map(InventoryRow::getKey).distinct().collect(Collectors.toList());
         Assertions.assertEquals(26, keys.size());
-        verifyOnlyTheseKeysWereTouched(keys, testStartTime, false);
+        verifyOnlyTheseKeysWereTouched(keys, testStartTime);
     }
 
     String rowToKeyAndVersion(InventoryRow row) {
@@ -150,39 +150,7 @@ public class ReReplicationToolTest extends AbstractTest {
         // verify only the keys we want are touched
         List<String> keys = rows.stream().map(InventoryRow::getKey).distinct().collect(Collectors.toList());
         Assertions.assertEquals(51, keys.size());
-        verifyOnlyTheseKeysWereTouched(keys, testStartTime, false);
-    }
-
-    @Test
-    void testWithDeleteMarkers() throws Exception {
-        final Instant testStartTime = delayAndGetStartTime();
-
-        // generate temp file
-        Path inventoryFile = Files.createTempFile("rereplication-inventory", "csv");
-        inventoryFile.toFile().deleteOnExit();
-        // map inventory rows to object-key strings
-        List<InventoryRow> rows = generateInventoryObjects(400, 450, false);
-        // write file
-        try (CSVPrinter csvPrinter = CSVFormat.DEFAULT.withHeader(InventoryRow.Header.class).print(new FileWriter(inventoryFile.toFile()))) {
-            for (InventoryRow row : rows) {
-                csvPrinter.printRecord(row.toFieldArray());
-            }
-        }
-
-        // tool should touch only the keys in the list
-        ReReplicationTool tool = new ReReplicationTool(ReReplicationTool.Config.builder()
-                .endpoint(URI.create(s3Endpoint))
-                .awsProfile(awsProfile)
-                .bucket(bucket)
-                .inventoryFile(inventoryFile)
-                .reReplicateDeleteMarkers(true) // include delete markers this time
-                .build());
-        tool.run();
-
-        // verify only the keys we want are touched (including delete markers)
-        List<String> keys = rows.stream().map(InventoryRow::getKey).distinct().collect(Collectors.toList());
-        Assertions.assertEquals(51, keys.size());
-        verifyOnlyTheseKeysWereTouched(keys, testStartTime, true);
+        verifyOnlyTheseKeysWereTouched(keys, testStartTime);
     }
 
     Instant delayAndGetStartTime() throws Exception {
@@ -200,7 +168,7 @@ public class ReReplicationToolTest extends AbstractTest {
     }
 
     // also checks that no object key has more than 2 versions or 1 version and 2 delete markers
-    void verifyOnlyTheseKeysWereTouched(List<String> keys, Instant testStartTime, boolean includeDeleteMarkers) {
+    void verifyOnlyTheseKeysWereTouched(List<String> keys, Instant testStartTime) {
         Map<String, AtomicInteger> dmCounts = Collections.synchronizedMap(new HashMap<>());
         Map<String, AtomicInteger> versionCounts = Collections.synchronizedMap(new HashMap<>());
         s3Client.listObjectVersionsPaginator(builder -> builder.bucket(getBucket())).forEach(response -> {
@@ -216,13 +184,8 @@ public class ReReplicationToolTest extends AbstractTest {
             });
             response.deleteMarkers().forEach(dm -> {
                 incrementCount(dmCounts, dm.key());
-                if (includeDeleteMarkers && keys.contains(dm.key()) && dm.isLatest()) {
-                    Assertions.assertTrue(dm.lastModified().isAfter(testStartTime),
-                            dm.key() + ":" + dm.versionId() + " mtime [" + dm.lastModified() + "] is before testStartTime [" + testStartTime + "]");
-                } else {
-                    Assertions.assertFalse(dm.lastModified().isAfter(testStartTime),
-                            dm.key() + ":" + dm.versionId() + " mtime [" + dm.lastModified() + "] is after testStartTime [" + testStartTime + "]");
-                }
+                Assertions.assertFalse(dm.lastModified().isAfter(testStartTime),
+                        dm.key() + ":" + dm.versionId() + " mtime [" + dm.lastModified() + "] is after testStartTime [" + testStartTime + "]");
             });
         });
         keys.forEach(key -> {

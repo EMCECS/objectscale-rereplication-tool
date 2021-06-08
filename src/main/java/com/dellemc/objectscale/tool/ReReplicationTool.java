@@ -102,47 +102,37 @@ public class ReReplicationTool extends AbstractVersionScanningTool {
     }
 
     void touchObject(InventoryRow inventoryRow) {
-        if (config.isReReplicateDeleteMarkers()
-                && inventoryRow.getIsDeleteMarker() != null && inventoryRow.getIsDeleteMarker()) {
-            // the version to update is a delete marker; to re-replicate, we need to issue another delete call
-            log.info("re-replicating object version [{}:{}] (delete marker) by issuing a DELETE call", inventoryRow.getKey(), inventoryRow.getVersionId());
-            s3Client.deleteObject(builder -> builder
+        final AccessControlPolicy acl;
+        if (config.reReplicateCustomAcls) {
+            // no other way to deal with custom ACLs then to GET and PUT them
+            // and we don't know who the default owner would be, so can't infer a canned ACL either
+            log.info("retrieving ACL for object version [{}:{}]", inventoryRow.getKey(), inventoryRow.getVersionId());
+            acl = aclFromResponse(s3Client.getObjectAcl(builder -> builder
                     .bucket(config.getBucket())
-                    .key(inventoryRow.getKey()));
+                    .key(inventoryRow.getKey())
+                    .versionId(inventoryRow.getVersionId())));
+        } else {
+            acl = null;
+        }
 
-        } else { // normal object version
-            final AccessControlPolicy acl;
-            if (config.reReplicateCustomAcls) {
-                // no other way to deal with custom ACLs then to GET and PUT them
-                // and we don't know who the default owner would be, so can't infer a canned ACL either
-                log.info("retrieving ACL for object version [{}:{}]", inventoryRow.getKey(), inventoryRow.getVersionId());
-                acl = aclFromResponse(s3Client.getObjectAcl(builder -> builder
-                        .bucket(config.getBucket())
-                        .key(inventoryRow.getKey())
-                        .versionId(inventoryRow.getVersionId())));
-            } else {
-                acl = null;
-            }
+        // TODO: do we need to support MPU copy on ObjectScale?  (ECS doesn't require it)
+        log.info("re-replicating object version [{}:{}] by issuing a PUT+COPY call", inventoryRow.getKey(), inventoryRow.getVersionId());
+        String versionIdStr = inventoryRow.getVersionId() != null ? "?versionId=" + inventoryRow.getVersionId() : "";
+        String newVersionId = s3Client.copyObject(builder -> builder
+                .copySource(String.format("%s/%s%s", config.getBucket(), inventoryRow.getKey(), versionIdStr))
+                .destinationBucket(config.getBucket())
+                .destinationKey(inventoryRow.getKey())
+                .metadataDirective(MetadataDirective.COPY)
+        ).versionId();
 
-            // TODO: do we need to support MPU copy on ObjectScale?  (ECS doesn't require it)
-            log.info("re-replicating object version [{}:{}] by issuing a PUT+COPY call", inventoryRow.getKey(), inventoryRow.getVersionId());
-            String versionIdStr = inventoryRow.getVersionId() != null ? "?versionId=" + inventoryRow.getVersionId() : "";
-            String newVersionId = s3Client.copyObject(builder -> builder
-                    .copySource(String.format("%s/%s%s", config.getBucket(), inventoryRow.getKey(), versionIdStr))
-                    .destinationBucket(config.getBucket())
-                    .destinationKey(inventoryRow.getKey())
-                    .metadataDirective(MetadataDirective.COPY)
-            ).versionId();
-
-            if (config.reReplicateCustomAcls) {
-                // set ACL on the new version
-                log.info("replicating ACL for new object version [{}:{}]", inventoryRow.getKey(), newVersionId);
-                s3Client.putObjectAcl(builder -> builder
-                        .bucket(config.getBucket())
-                        .key(inventoryRow.getKey())
-                        .versionId(newVersionId)
-                        .accessControlPolicy(acl));
-            }
+        if (config.reReplicateCustomAcls) {
+            // set ACL on the new version
+            log.info("replicating ACL for new object version [{}:{}]", inventoryRow.getKey(), newVersionId);
+            s3Client.putObjectAcl(builder -> builder
+                    .bucket(config.getBucket())
+                    .key(inventoryRow.getKey())
+                    .versionId(newVersionId)
+                    .accessControlPolicy(acl));
         }
     }
 
@@ -157,7 +147,6 @@ public class ReReplicationTool extends AbstractVersionScanningTool {
     @EqualsAndHashCode(callSuper = true)
     @ToString
     public static class Config extends AbstractVersionScanningTool.Config {
-        private final boolean reReplicateDeleteMarkers;
         private final boolean reReplicateCustomAcls;
     }
 }

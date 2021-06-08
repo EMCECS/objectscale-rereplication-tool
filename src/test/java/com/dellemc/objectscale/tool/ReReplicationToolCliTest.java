@@ -106,7 +106,6 @@ public class ReReplicationToolCliTest {
                 "-f", file,
                 "-t", "" + threads,
                 "-r",
-                "--re-replicate-delete-markers",
                 "--re-replicate-custom-acls"
         };
 
@@ -120,7 +119,6 @@ public class ReReplicationToolCliTest {
         Assertions.assertEquals(profile, config.getAwsProfile());
         Assertions.assertEquals(file, config.getInventoryFile().toString());
         Assertions.assertEquals(threads, config.getThreadCount());
-        Assertions.assertTrue(config.isReReplicateDeleteMarkers());
         Assertions.assertTrue(config.isReReplicateCustomAcls());
     }
 
@@ -148,7 +146,6 @@ public class ReReplicationToolCliTest {
         Assertions.assertNull(config.getAwsProfile());
         Assertions.assertEquals(file, config.getInventoryFile().toString());
         Assertions.assertEquals(AbstractVersionScanningTool.Config.DEFAULT_THREAD_COUNT, config.getThreadCount());
-        Assertions.assertFalse(config.isReReplicateDeleteMarkers());
         Assertions.assertFalse(config.isReReplicateCustomAcls());
     }
 }
