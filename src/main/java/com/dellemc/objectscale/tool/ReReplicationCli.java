@@ -8,6 +8,7 @@ import org.apache.logging.log4j.core.config.Configurator;
 
 import java.net.URI;
 import java.nio.file.Paths;
+import java.util.concurrent.*;
 
 public class ReReplicationCli {
     private static final Logger log = LogManager.getLogger(ReReplicationCli.class);
@@ -118,15 +119,17 @@ public class ReReplicationCli {
     }
 
     public static void main(String[] args) throws Exception {
+        System.out.println("rereplication-tool - a tool to inventory replication status or re-trigger replication for object versions in a bucket with an associated CRR policy.");
+        System.out.println("Version: " + RELEASE_VERSION + "\n");
+
         // check for help option
-        CommandLine commandLine = new DefaultParser().parse(new Options().addOption(Option.builder("h").build()), args);
+        CommandLine commandLine = new DefaultParser().parse(new Options().addOption(Option.builder("h").build()), args, true);
         if (commandLine.hasOption('h')) {
-            System.out.println("\n" + ReReplicationProcessor.class.getSimpleName() + " - a tool to inventory replication status or re-trigger replication for object versions in a bucket with an associated CRR policy.");
-            System.out.println("Version: " + RELEASE_VERSION + "\n");
             HelpFormatter hf = new HelpFormatter();
             hf.printHelp("java -jar rereplication-tool-1.0.jar -e <endpoint> -b <bucket> (-i|-r) -f <inventory-file> [options]",
                     "options:", options(), null);
             System.out.println();
+
         } else {
             commandLine = new DefaultParser().parse(options(), args);
 
@@ -141,14 +144,42 @@ public class ReReplicationCli {
             log.info("parsed options:\n{}", config);
             config.validate();
 
-            AbstractReplicationTool tool;
-            if (commandLine.hasOption("inventory")) {
-                tool = new InventoryGenerator((InventoryGenerator.Config) config);
-            } else {
-                tool = new ReReplicationProcessor((ReReplicationProcessor.Config) config);
-            }
-            tool.run();
-            // TODO: make this asynchronous and have a status thread
+            try (AbstractReplicationTool tool = commandLine.hasOption("inventory")
+                    ? new InventoryGenerator((InventoryGenerator.Config) config)
+                    : new ReReplicationProcessor((ReReplicationProcessor.Config) config)) {
+                long now = System.currentTimeMillis();
+                ProcessingStats grossRecords = new ProcessingStats(now), filteredRecords = new ProcessingStats(now);
+                tool.setGrossRecords(grossRecords);
+                tool.setFilteredRecords(filteredRecords);
+                CompletableFuture<Void> toolFuture = CompletableFuture.runAsync(tool);
+
+                ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+                ScheduledFuture<?> statsFuture = executor.scheduleAtFixedRate(() -> {
+                    // print stats every second
+                    System.out.print(getStatsLine(tool) + "\r");
+                }, 1, 1, TimeUnit.SECONDS);
+
+                toolFuture.join(); // waits for tool to complete
+
+                // record end-time for stats
+                long endTime = System.currentTimeMillis();
+                grossRecords.setEndTimeMillis(endTime);
+                filteredRecords.setEndTimeMillis(endTime);
+
+                // stop the stats printer
+                statsFuture.cancel(true);
+                executor.shutdown();
+                System.out.println(getStatsLine(tool));
+                System.out.println("Done.");
+            } // try-with-resources will close the tool (and associated S3Client)
         }
+    }
+
+    static String getStatsLine(AbstractReplicationTool tool) {
+        return String.format("%s: %d (%d/s) [%d errors], %s: %d (%d/s) [%d errors]\r",
+                tool.getGrossRecordsLabel(), tool.getGrossRecords().getProcessedObjects(),
+                tool.getGrossRecords().getPerSecondAverage(), tool.getGrossRecords().getErrors(),
+                tool.getFilteredRecordsLabel(), tool.getFilteredRecords().getProcessedObjects(),
+                tool.getFilteredRecords().getPerSecondAverage(), tool.getFilteredRecords().getErrors());
     }
 }

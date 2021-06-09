@@ -17,6 +17,8 @@ public abstract class AbstractReplicationTool implements Runnable, AutoCloseable
     protected final S3Client s3Client;
     private final boolean createdClient;
     private boolean closed = false;
+    protected ProcessingStats grossRecords;
+    protected ProcessingStats filteredRecords;
 
     public AbstractReplicationTool(Config config, S3Client s3Client) {
         this.config = config;
@@ -28,6 +30,10 @@ public abstract class AbstractReplicationTool implements Runnable, AutoCloseable
             this.createdClient = true;
         }
     }
+
+    abstract String getGrossRecordsLabel();
+
+    abstract String getFilteredRecordsLabel();
 
     @Override
     public synchronized void close() {
@@ -56,6 +62,22 @@ public abstract class AbstractReplicationTool implements Runnable, AutoCloseable
                 .endpointOverride(config.endpoint)
                 .credentialsProvider(credentialsProvider)
                 .build();
+    }
+
+    public ProcessingStats getGrossRecords() {
+        return grossRecords;
+    }
+
+    public void setGrossRecords(ProcessingStats grossRecords) {
+        this.grossRecords = grossRecords;
+    }
+
+    public ProcessingStats getFilteredRecords() {
+        return filteredRecords;
+    }
+
+    public void setFilteredRecords(ProcessingStats filteredRecords) {
+        this.filteredRecords = filteredRecords;
     }
 
     @SuperBuilder(toBuilder = true)

@@ -36,6 +36,16 @@ public class ReReplicationProcessor extends AbstractReplicationTool {
     }
 
     @Override
+    String getGrossRecordsLabel() {
+        return "Records read";
+    }
+
+    @Override
+    String getFilteredRecordsLabel() {
+        return "Objects triggered";
+    }
+
+    @Override
     public void run() {
 
         // read from inventory file
@@ -145,7 +155,7 @@ public class ReReplicationProcessor extends AbstractReplicationTool {
     @SuperBuilder(toBuilder = true)
     @Getter
     @EqualsAndHashCode(callSuper = true)
-    @ToString
+    @ToString(callSuper = true)
     public static class Config extends AbstractReplicationTool.Config {
         private final boolean reReplicateCustomAcls;
     }

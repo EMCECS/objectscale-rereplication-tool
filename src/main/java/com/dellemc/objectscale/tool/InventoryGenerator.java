@@ -28,13 +28,23 @@ public class InventoryGenerator extends AbstractReplicationTool {
     private static final Logger log = LogManager.getLogger(InventoryGenerator.class);
 
     public static final String HEADER_AMZ_REPLICATION_STATUS = "x-amz-replication-status";
-    public static final int QUEUE_SIZE = 2000;
+    public static final int QUEUE_SIZE = 5000;
 
     private final Config config;
 
     public InventoryGenerator(Config config) {
         super(config, null);
         this.config = config;
+    }
+
+    @Override
+    String getGrossRecordsLabel() {
+        return "Listed versions";
+    }
+
+    @Override
+    String getFilteredRecordsLabel() {
+        return "Output records";
     }
 
     @Override
@@ -62,6 +72,7 @@ public class InventoryGenerator extends AbstractReplicationTool {
                                         && inventoryRow.getReplicationStatus() != ReplicationStatus.FAILED)
                                     continue;
                                 csvPrinter.printRecord(inventoryRow.toFieldArray());
+                                if (filteredRecords != null) filteredRecords.incProcessedObjects();
                             }
                         } catch (ExecutionException e) {
                             if (e.getCause() instanceof ListingCompleteException) {
@@ -69,6 +80,7 @@ public class InventoryGenerator extends AbstractReplicationTool {
                                 log.info("Listing terminator received in CSV writer thread");
                             } else {
                                 logException(Level.WARN, "Unexpected ERROR", e);
+                                if (filteredRecords != null) filteredRecords.incErrors();
                             }
                         } catch (InterruptedException e) {
                             logException(Level.INFO, "CSV writer thread interrupted", e);
@@ -97,11 +109,15 @@ public class InventoryGenerator extends AbstractReplicationTool {
                     .prefix(config.getPrefix()));
 
             // use a stream to convert to InventoryRow and filter
-            versionPages.stream().flatMap(response ->
-                    Stream.concat( // merge versions and delete-markers
-                            response.versions().stream().map(InventoryGenerator::inventoryRowFromObjectVersion),
-                            response.deleteMarkers().stream().map(InventoryGenerator::inventoryRowFromDeleteMarker)
-                    ).sorted()) // sort combined versions+deleteMarkers (this is how they are returned, but s3client separates)
+            versionPages.stream()
+                    .flatMap(response -> {
+                        if (grossRecords != null)
+                            grossRecords.incProcessedObjects(response.versions().size() + response.deleteMarkers().size());
+                        return Stream.concat( // merge versions and delete-markers
+                                response.versions().stream().map(InventoryGenerator::inventoryRowFromObjectVersion),
+                                response.deleteMarkers().stream().map(InventoryGenerator::inventoryRowFromDeleteMarker)
+                        ).sorted(); // sort combined versions+deleteMarkers (this is how they are returned, but s3client separates)
+                    })
                     // if not listing all versions, filter current version only
                     .filter(inventoryRow -> config.filterType == FilterType.AllVersions || inventoryRow.getIsLatest())
                     .forEachOrdered(inventoryRow -> {
@@ -194,7 +210,7 @@ public class InventoryGenerator extends AbstractReplicationTool {
     @SuperBuilder(toBuilder = true)
     @Getter
     @EqualsAndHashCode(callSuper = true)
-    @ToString
+    @ToString(callSuper = true)
     public static class Config extends AbstractReplicationTool.Config {
         private final String prefix;
         @Builder.Default
