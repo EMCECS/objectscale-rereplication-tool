@@ -10,7 +10,7 @@ plugins {
 group = 'com.dellemc.objectscale'
 version = '1.0'
 
-mainClassName = "com.dellemc.objectscale.tool.ReReplicationToolCli"
+mainClassName = "com.dellemc.objectscale.tool.ReReplicationCli"
 archivesBaseName = 'rereplication-tool'
 sourceCompatibility = 1.8
 
@@ -37,10 +37,12 @@ dependencies {
 }
 
 shadowJar {
+    classifier ''
     configurations = [project.configurations.shadow]
     manifest {
         attributes 'Implementation-Version': project.version
     }
+    from('src/app/resources')
 }
 
 test {
