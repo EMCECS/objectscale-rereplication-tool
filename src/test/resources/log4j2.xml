@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <Appenders>
+        <Console name="mainAppender" target="SYSTEM_OUT">
+            <PatternLayout pattern="%-10r %-5p [%-15t] %c{1}: %m%n"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+
+        <!-- signature debugging -->
+        <!--
+        <Logger name="software.amazon.awssdk.auth.signer" level="trace"/>
+        -->
+
+        <!-- request debugging -->
+        <!--
+        <Logger name="software.amazon.awssdk.request" level="debug"/>
+        -->
+
+        <Root level="info">
+            <AppenderRef ref="mainAppender"/>
+        </Root>
+    </Loggers>
+</Configuration>
