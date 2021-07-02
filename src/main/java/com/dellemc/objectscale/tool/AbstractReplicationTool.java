@@ -7,6 +7,7 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import org.apache.logging.log4j.util.Strings;
 import software.amazon.awssdk.auth.credentials.*;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
 import java.net.URI;
@@ -61,6 +62,7 @@ public abstract class AbstractReplicationTool implements Runnable, AutoCloseable
         return S3Client.builder()
                 .endpointOverride(config.endpoint)
                 .credentialsProvider(credentialsProvider)
+                .region(Region.US_EAST_1) // TODO: would this ever need to be different?
                 .build();
     }
 
