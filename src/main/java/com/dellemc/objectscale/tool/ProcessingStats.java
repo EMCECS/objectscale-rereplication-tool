@@ -49,8 +49,8 @@ public class ProcessingStats {
     }
 
     public long getPerSecondAverage() {
-        long endTime = endTimeMillis > 0 ? endTimeMillis / 1000 : System.currentTimeMillis() / 1000;
-        long secondDuration = endTime - startTimeMillis / 1000;
-        return getProcessedObjects() / secondDuration;
+        long endTime = endTimeMillis > 0 ? endTimeMillis : System.currentTimeMillis();
+        long duration = endTime - startTimeMillis;
+        return duration > 0 ? getProcessedObjects() * 1000 / duration : 0;
     }
 }
