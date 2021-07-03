@@ -125,23 +125,31 @@ public class InventoryGenerator extends AbstractReplicationTool {
                         try {
                             futureQueue.put(executor.blockingSubmit(() -> {
                                 // HEAD each version to get replication status
+                                String replStatus = null;
                                 try {
-                                    inventoryRow.setReplicationStatus(
-                                            s3Client.headObject(builder -> builder.bucket(config.getBucket())
-                                                    .key(inventoryRow.getKey())
-                                                    .versionId(inventoryRow.getVersionId()))
-                                                    .replicationStatus());
+                                    replStatus = s3Client.headObject(builder -> builder.bucket(config.getBucket())
+                                            .key(inventoryRow.getKey())
+                                            .versionId(inventoryRow.getVersionId()))
+                                            .replicationStatusAsString();
                                 } catch (S3Exception e) {
                                     if (e.statusCode() == 405) {
                                         // we can still pull the replication status from a 405 (method not allowed)
-                                        inventoryRow.setReplicationStatus(ReplicationStatus.fromValue(
-                                                e.awsErrorDetails().sdkHttpResponse().firstMatchingHeader(HEADER_AMZ_REPLICATION_STATUS)
-                                                        .orElse("Unknown")));
+                                        replStatus = e.awsErrorDetails().sdkHttpResponse()
+                                                .firstMatchingHeader(HEADER_AMZ_REPLICATION_STATUS).orElse(null);
                                     } else {
                                         logException(Level.INFO, "HEAD failed for " + inventoryRow.getKey() + ":" + inventoryRow.getVersionId(), e);
-                                        inventoryRow.setReplicationStatus(ReplicationStatus.fromValue("Unknown"));
                                     }
                                 }
+
+                                if (replStatus == null) {
+                                    log.info("No replication status returned for {}:{}", inventoryRow.getKey(), inventoryRow.getVersionId());
+                                } else {
+                                    inventoryRow.setReplicationStatus(ReplicationStatus.fromValue(replStatus));
+                                    if (inventoryRow.getReplicationStatus() == ReplicationStatus.UNKNOWN_TO_SDK_VERSION)
+                                        log.info("Unrecognized replication status ({}) for {}:{}",
+                                                replStatus, inventoryRow.getKey(), inventoryRow.getVersionId());
+                                }
+
                                 return inventoryRow;
                             }));
                         } catch (InterruptedException e) { // would come from futureQueue.put()
