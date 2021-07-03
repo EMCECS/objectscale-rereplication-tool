@@ -134,6 +134,7 @@ public class InventoryGenerator extends AbstractReplicationTool {
                                 } catch (S3Exception e) {
                                     if (e.statusCode() == 405) {
                                         // we can still pull the replication status from a 405 (method not allowed)
+                                        log.debug("HEAD request for {}:{} returned a 405", inventoryRow.getKey(), inventoryRow.getVersionId());
                                         replStatus = e.awsErrorDetails().sdkHttpResponse()
                                                 .firstMatchingHeader(HEADER_AMZ_REPLICATION_STATUS).orElse(null);
                                     } else {
@@ -142,7 +143,7 @@ public class InventoryGenerator extends AbstractReplicationTool {
                                 }
 
                                 if (replStatus == null) {
-                                    log.info("No replication status returned for {}:{}", inventoryRow.getKey(), inventoryRow.getVersionId());
+                                    log.info("No replication status returned for {}:{} (header not present)", inventoryRow.getKey(), inventoryRow.getVersionId());
                                 } else {
                                     inventoryRow.setReplicationStatus(ReplicationStatus.fromValue(replStatus));
                                     if (inventoryRow.getReplicationStatus() == ReplicationStatus.UNKNOWN_TO_SDK_VERSION)
