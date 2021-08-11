@@ -101,3 +101,11 @@ options:
                                  for inventory or re-replication
  -v,--verbose                    Verbose logging
 ```
+
+# Dependency Licenses
+
+To generate a dependency license report, simply execute the following build task:
+
+```shell
+./gradlew generateLicenseReport
+```
