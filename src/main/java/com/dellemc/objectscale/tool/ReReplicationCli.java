@@ -34,6 +34,8 @@ public class ReReplicationCli {
         options.addOption(Option.builder("t").longOpt("threads")
                 .desc("The size of the thread pool used to HEAD and COPY objects for inventory or re-replication")
                 .hasArg().argName("thread-count").build());
+        options.addOption(Option.builder().longOpt("unsafe-disable-ssl-validation")
+                .desc("Disables SSL/TLS certificate validation - this is NOT safe!").build());
 
         OptionGroup commandGroup = new OptionGroup();
         commandGroup.addOption(Option.builder("i").longOpt("inventory")
@@ -97,6 +99,7 @@ public class ReReplicationCli {
                 .secretKey(commandLine.getOptionValue("secret-key"))
                 .awsProfile(commandLine.getOptionValue("profile"))
                 .inventoryFile(Paths.get(commandLine.getOptionValue("file")))
+                .disableSslValidation(commandLine.hasOption("unsafe-disable-ssl-validation"))
                 .build();
 
         if (commandLine.hasOption("threads")) {
