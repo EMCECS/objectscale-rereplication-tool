@@ -5,12 +5,10 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.util.Strings;
 import software.amazon.awssdk.auth.credentials.*;
-import software.amazon.awssdk.core.internal.http.loader.DefaultSdkHttpClientBuilder;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.SdkHttpConfigurationOption;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
@@ -69,19 +67,21 @@ public abstract class AbstractReplicationTool implements Runnable, AutoCloseable
             credentialsProvider = DefaultCredentialsProvider.create();
         }
 
-        SdkHttpClient.Builder<?> httpBuilder = ApacheHttpClient.builder();
+        SdkHttpClient httpClient;
         if (config.disableSslValidation) {
-            httpBuilder.buildWithDefaults(
+            httpClient = ApacheHttpClient.builder().buildWithDefaults(
                     AttributeMap.builder()
                             .put(SdkHttpConfigurationOption.TRUST_ALL_CERTIFICATES, true)
                             .build());
+        } else {
+            httpClient = ApacheHttpClient.builder().build();
         }
 
         return S3Client.builder()
                 .endpointOverride(config.endpoint)
                 .credentialsProvider(credentialsProvider)
                 .region(Region.US_EAST_1) // TODO: would this ever need to be different?
-                .httpClient(httpBuilder.build())
+                .httpClient(httpClient)
                 .build();
     }
 
