@@ -9,7 +9,7 @@ plugins {
 }
 
 group = 'com.dellemc.objectscale'
-version = '1.1'
+version = '1.2'
 
 mainClassName = "com.dellemc.objectscale.tool.ReReplicationCli"
 archivesBaseName = 'rereplication-tool'
