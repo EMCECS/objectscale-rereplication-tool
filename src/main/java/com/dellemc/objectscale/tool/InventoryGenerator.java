@@ -145,7 +145,7 @@ public class InventoryGenerator extends AbstractReplicationTool {
                                 if (replStatus == null) {
                                     log.info("No replication status returned for {}:{} (header not present)", inventoryRow.getKey(), inventoryRow.getVersionId());
                                 } else {
-                                    inventoryRow.setReplicationStatus(ReplicationStatus.fromValue(replStatus));
+                                    inventoryRow.setReplicationStatus(getReplicationStatusEnum(replStatus));
                                     if (inventoryRow.getReplicationStatus() == ReplicationStatus.UNKNOWN_TO_SDK_VERSION)
                                         log.info("Unrecognized replication status ({}) for {}:{}",
                                                 replStatus, inventoryRow.getKey(), inventoryRow.getVersionId());
@@ -188,6 +188,13 @@ public class InventoryGenerator extends AbstractReplicationTool {
             if (writerThread != null) writerThread.interrupt();
             throw new RuntimeException(e);
         } // try-with-resources will close the CSV file
+    }
+
+    static ReplicationStatus getReplicationStatusEnum(String replStatusStr) {
+        // necessary due to a bug in the AWS SDK enum (reported as an error in the API model here:
+        // https://githubmemory.com/repo/aws/aws-sdk-go-v2/issues/1280)
+        if ("COMPLETED".equals(replStatusStr)) return ReplicationStatus.COMPLETE;
+        return ReplicationStatus.fromValue(replStatusStr);
     }
 
     static InventoryRow inventoryRowFromObjectVersion(ObjectVersion version) {
