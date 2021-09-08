@@ -63,43 +63,60 @@ Note: The CSV file will have a header row with these field names in it.
 
 ## Full CLI Syntax
 ```text
-usage: java -jar rereplication-tool-1.0.jar -e <endpoint> -b <bucket> (-i|-r) -f
-            <inventory-file> [options]
+usage: java -jar rereplication-tool-1.2.jar -e <endpoint> -b <bucket>
+            (-i|-r) -f <inventory-file> [options]
 options:
- -a,--access-key <access-key>    The AWS Access Key ID to access the bucket (if not using
-                                 an AWS profile)
-    --all-versions               Inventory all object versions
- -b,--bucket <bucket-name>       The bucket to inventory
- -c,--current-version            Only inventory the current object versions (do not
-                                 include previous/non-current versions)
- -d,--debug                      Debug logging
- -e,--endpoint <endpoint-uri>    ObjectScale S3 endpoint URL. This includes scheme and
-                                 port (i.e. https://10.1.4.5:9021)
- -f,--file <inventory-file>      The file to read when triggering re-replication, or write
-                                 when generating an inventory (in CSV format)
-    --failed-current-version     Only inventory the current object versions that failed
-                                 replication (do not include previous/non-current versions
-                                 or replicated versions) - this is the default
-    --force-overwrite            When performing inventory, if the inventory file already
-                                 exists, overwrite it
- -h,--help                       Print this help text
- -i,--inventory                  Perform an inventory of the bucket and output to CSV
- -p,--profile <profile-name>     The AWS CLI profile to use for credentials, if other than
-                                 default (configuration must be set for this profile)
-    --prefix <bucket-prefix>     Only inventory objects in the bucket that are under this
-                                 prefix
- -r,--re-replicate               Trigger re-replication of a list of objects from a
-                                 provided file. Re-replication is triggered by COPYing the
-                                 object to itself to create a new version, which will
-                                 trigger CRR policy replication for that new version
-    --re-replicate-custom-acls   Adds support for custom ACLs during re-replication.
-                                 WARNING: this will triple the API calls to S3 and take
-                                 longer to complete
- -s,--secret-key <secret-key>    The AWS Secret Key to access the bucket (if not using an
-                                 AWS profile)
- -t,--threads <thread-count>     The size of the thread pool used to HEAD and COPY objects
-                                 for inventory or re-replication
- -v,--verbose                    Verbose logging
+ -a,--access-key <access-key>         The AWS Access Key ID to access the
+                                      bucket (if not using an AWS profile)
+    --all-versions                    Inventory all object versions
+ -b,--bucket <bucket-name>            The bucket to inventory
+ -c,--current-version                 Only inventory the current object
+                                      versions (do not include
+                                      previous/non-current versions)
+ -d,--debug                           Debug logging
+ -e,--endpoint <endpoint-uri>         ObjectScale S3 endpoint URL. This
+                                      includes scheme and port (i.e.
+                                      https://10.1.4.5:9021)
+ -f,--file <inventory-file>           The file to read when triggering
+                                      re-replication, or write when
+                                      generating an inventory (in CSV
+                                      format)
+    --failed-current-version          Only inventory the current object
+                                      versions that failed replication (do
+                                      not include previous/non-current
+                                      versions or replicated versions) -
+                                      this is the default
+    --force-overwrite                 When performing inventory, if the
+                                      inventory file already exists,
+                                      overwrite it
+ -h,--help                            Print this help text
+ -i,--inventory                       Perform an inventory of the bucket
+                                      and output to CSV
+ -p,--profile <profile-name>          The AWS CLI profile to use for
+                                      credentials, if other than default
+                                      (configuration must be set for this
+                                      profile)
+    --prefix <bucket-prefix>          Only inventory objects in the bucket
+                                      that are under this prefix
+ -r,--re-replicate                    Trigger re-replication of a list of
+                                      objects from a provided file.
+                                      Re-replication is triggered by
+                                      COPYing the object to itself to
+                                      create a new version, which will
+                                      trigger CRR policy replication for
+                                      that new version
+    --re-replicate-custom-acls        Adds support for custom ACLs during
+                                      re-replication. WARNING: this will
+                                      triple the API calls to S3 and take
+                                      longer to complete
+ -s,--secret-key <secret-key>         The AWS Secret Key to access the
+                                      bucket (if not using an AWS profile)
+ -t,--threads <thread-count>          The size of the thread pool used to
+                                      HEAD and COPY objects for inventory
+                                      or re-replication
+    --unsafe-disable-ssl-validation   Disables SSL/TLS certificate
+                                      validation - this is NOT safe!
+ -v,--verbose                         Verbose logging
 ```
 
 # Dependency Licenses
