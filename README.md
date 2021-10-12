@@ -126,3 +126,7 @@ To generate a dependency license report, simply execute the following build task
 ```shell
 ./gradlew generateLicenseReport
 ```
+
+# API Docs
+
+Javadoc is available here: https://emcecs.github.io/objectscale-rereplication-tool/latest/javadoc/
