@@ -6,6 +6,8 @@ plugins {
     id 'application'
     id 'com.github.johnrengelman.shadow' version '5.2.0'
     id 'com.github.jk1.dependency-license-report' version '1.17'
+    id 'org.ajoberstar.grgit' version '4.1.0'
+    id 'org.ajoberstar.git-publish' version '3.0.0'
 }
 
 group = 'com.dellemc.objectscale'
@@ -53,4 +55,32 @@ test {
 import com.github.jk1.license.render.*
 licenseReport {
     renderers = [new InventoryHtmlReportRenderer(), new CsvReportRenderer()]
+}
+
+ext.aggregatedDocsDir = "$buildDir/aggregatedDocs"
+task aggregateDocs {
+    doLast {
+        copy {
+            from docsDir
+            into "${aggregatedDocsDir}/latest"
+        }
+        copy {
+            from docsDir
+            into "${aggregatedDocsDir}/${project.version}"
+        }
+    }
+}
+tasks.aggregateDocs.dependsOn javadoc
+
+gitPublish {
+    branch = 'gh-pages'
+    contents {
+        from aggregatedDocsDir
+    }
+    preserve { include '**/*' }
+}
+tasks.gitPublishPush.dependsOn aggregateDocs
+
+clean {
+    delete aggregatedDocsDir
 }
